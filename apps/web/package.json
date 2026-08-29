@@ -1,5 +1,8 @@
 {
-  "name": "web",
+  "name": "instagram-scheduler",
+  "version": "0.1.0",
   "private": true,
-  "version": "0.1.0"
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
 }
