@@ -1,8 +1,10 @@
+import { LoginForm } from '../../components/LoginForm';
+
 export default function LoginPage() {
   return (
     <main style={{ fontFamily: 'system-ui', padding: 32 }}>
-      <h1>Login</h1>
-      <p>Login form goes here.</p>
+      <h1>Log in</h1>
+      <LoginForm />
     </main>
   );
 }
