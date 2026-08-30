@@ -1,5 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import { apiRouter } from './routes';
 
 dotenv.config();
 
@@ -9,6 +10,8 @@ app.use(express.json());
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'api' });
 });
+
+app.use('/api', apiRouter);
 
 const port = Number(process.env.PORT ?? 4000);
 app.listen(port, () => {
