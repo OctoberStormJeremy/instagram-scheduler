@@ -5,12 +5,16 @@ import { mediaRouter } from './media';
 import { postsRouter } from './posts';
 import { adminRouter } from './admin';
 import { adminReconciliationRouter } from './admin-reconciliation';
+import { requireAuth } from '../middleware/auth';
 
 export const apiRouter = Router();
 
+// Public routes
 apiRouter.use('/auth', authRouter);
-apiRouter.use('/integrations/instagram', instagramRouter);
-apiRouter.use('/media', mediaRouter);
-apiRouter.use('/posts', postsRouter);
-apiRouter.use('/admin', adminRouter);
-apiRouter.use('/admin/reconciliation', adminReconciliationRouter);
+
+// Authenticated routes
+apiRouter.use('/integrations/instagram', requireAuth, instagramRouter);
+apiRouter.use('/media', requireAuth, mediaRouter);
+apiRouter.use('/posts', requireAuth, postsRouter);
+apiRouter.use('/admin', requireAuth, adminRouter);
+apiRouter.use('/admin/reconciliation', requireAuth, adminReconciliationRouter);
