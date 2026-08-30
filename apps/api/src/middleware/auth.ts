@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { prisma } from '../lib/db';
 
 export interface AuthenticatedUser {
   id: string;
@@ -19,14 +20,10 @@ declare global {
 
 /**
  * Reads the session token from the `Authorization: ****** header
- * or the `session` cookie, validates it, and attaches `req.user`.
- *
+ * or the `session` cookie, validates it against the DB, and attaches `req.user`.
  * Returns 401 if no valid session is found.
- *
- * NOTE: Token validation is a stub — replace with a real DB/cache lookup
- * once the database layer is wired in.
  */
-export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   const token = extractToken(req);
 
   if (!token) {
@@ -34,7 +31,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     return;
   }
 
-  const user = validateToken(token);
+  const user = await lookupSession(token);
 
   if (!user) {
     res.status(401).json({ error: 'Invalid or expired session' });
@@ -49,11 +46,11 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
  * Same as requireAuth but only blocks if a token is present and invalid.
  * If no token is provided the request continues with req.user undefined.
  */
-export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
+export async function optionalAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
   const token = extractToken(req);
 
   if (token) {
-    const user = validateToken(token);
+    const user = await lookupSession(token);
     if (user) {
       req.user = user;
     }
@@ -80,22 +77,23 @@ function extractToken(req: Request): string | null {
   return null;
 }
 
-/**
- * Stub validator — replace with a real Session DB lookup.
- * Returns null for any token that doesn't match the dev sentinel.
- */
-function validateToken(token: string): AuthenticatedUser | null {
-  // In development, accept any non-empty token and return a demo user.
-  // TODO: replace with `prisma.session.findUnique({ where: { token } })`.
-  if (process.env.NODE_ENV !== 'production' && token.length > 0) {
-    return {
-      id: 'demo-user',
-      email: 'demo@example.com',
-      name: 'Demo User',
-      timezone: 'UTC',
-      isAdmin: true
-    };
-  }
+async function lookupSession(token: string): Promise<AuthenticatedUser | null> {
+  const session = await prisma.session.findUnique({
+    where: { token },
+    include: { user: true }
+  });
 
-  return null;
+  if (!session) return null;
+  if (session.expiresAt < new Date()) return null;
+
+  const { user } = session;
+
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    timezone: user.timezone,
+    isAdmin: user.isAdmin
+  };
 }
+
